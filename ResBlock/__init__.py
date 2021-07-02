@@ -1,1 +1,1 @@
-from .resblock import resblock
+from .resblock import Residual, ResBlock

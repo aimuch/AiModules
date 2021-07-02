@@ -4,19 +4,32 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-class ResBlock(nn.Module):
-    def __init__(self, n_chans):
-        super(ResBlock, self).__init__()
-        self.conv = nn.Conv2d(  n_chans, n_chans,
-                                kernel_size=3, padding=1,
-                                bias=False)
-        self.batch_norm = nn.BatchNorm2d(num_features=n_chans)
-        torch.nn.init.kaiming_normal_(self.conv.weight, nonlinearity='relu')
-        torch.nn.init.constant_(self.batch_norm.weight, 0.5)
-        torch.nn.init.zeros_(self.batch_norm.bias)
+class Residual(nn.Module):
+    def __init__(self, input_channels, num_channels, use_1x1conv=False, strides=1):
+        super(Residual, self).__init__()
+        self.conv1 = nn.Conv2d(input_channels, num_channels, kernel_size=3, padding=1, stride=strides)
+        self.conv2 = nn.Conv2d(num_channels, num_channels, kernel_size=3, padding=1)
+        if use_1x1conv:
+            self.conv3 = nn.Conv2d(input_channels, num_channels, kernel_size=1, stride=strides)
+        else:
+            self.conv3 = None
+        self.bn1 = nn.BatchNorm2d(num_channels)
+        self.bn2 = nn.BatchNorm2d(num_channels)
+        self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
-        out = self.conv(x)
-        out = self.batch_norm(out)
-        out = torch.relu(out)
-        return out + x
+    def forward(self, X):
+        Y = F.relu(self.bn1(self.conv1(X)))
+        Y = self.bn2(self.conv2(Y))
+        if self.conv3:
+            X = self.conv3(X)
+        Y += X
+        return F.relu(Y)
+
+def ResBlock(input_channels, num_channels, num_residuals, first_block=False):
+    blk = []
+    for i in range(num_residuals):
+        if i == 0 and not first_block:
+            blk.append(Residual(input_channels, num_channels, use_1x1conv=True, strides=2))
+        else:
+            blk.append(Residual(num_channels, num_channels))
+    return blk
