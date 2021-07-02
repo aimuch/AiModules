@@ -10,20 +10,20 @@ class BottleNeck(nn.Module):
 
     # Normally the 3td conv possesses 4x channels compared to previous ones expansion = 4
 
-    def __init__(self, in_channels, channels, stride=1, downsample: Optional[nn.Module]=None):
+    def __init__(self, input_channels, output_channels, stride=1, downsample: Optional[nn.Module]=None):
         super(BottleNeck, self).__init__()
         # Notice: In the first bottleneck of every residual stage,
         #         set 3x3conv stride=2 to halve the feature_map size,
         #         except the first residual stage (also named stage 2),
         #         which has been halved by MaxPooling with stirde=2 in stage 1.
-        self.conv1 = nn.Conv2d(in_channels, channels, kernel_size=1, stride=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(channels)
-        self.conv2 = nn.Conv2d(channels, channels, kernel_size=3, stride=stride,
+        self.conv1 = nn.Conv2d(input_channels, output_channels, kernel_size=1, stride=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(output_channels)
+        self.conv2 = nn.Conv2d(output_channels, output_channels, kernel_size=3, stride=stride,
                             padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(channels)
-        self.conv3 = nn.Conv2d(channels, channels * self.expansion, kernel_size=1,
+        self.bn2 = nn.BatchNorm2d(output_channels)
+        self.conv3 = nn.Conv2d(output_channels, output_channels * self.expansion, kernel_size=1,
                             stride=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(channels *self.expansion)
+        self.bn3 = nn.BatchNorm2d(output_channels * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
 
